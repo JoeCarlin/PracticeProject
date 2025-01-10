@@ -1,8 +1,7 @@
-import math
+age = int(input("Enter your age: "))
 
 
-radius = float(input("Enter the radius of the circle: "))
-
-circumference = 2 * math.pi * radius
-
-print(f"The circumference of the circle is: {round(circumference, 2)}")
+if age < 18:
+    print("You arent allowed to get a credit card")
+else:
+    print("You can get a credit card")
