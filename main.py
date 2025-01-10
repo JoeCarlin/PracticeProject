@@ -1,5 +1,8 @@
 # how to accept user input in python
 
-name = input("What is your name? ")
+length = int(input("Enter the length of the rectangle: "))
+width = int(input("Enter the width of the rectangle: "))
 
-print(f"Hello {name} how are you today?")
+area = length * width
+
+print("The area of the rectangle is: ", area)
