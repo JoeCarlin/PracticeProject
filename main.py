@@ -1,8 +1,8 @@
-# how to accept user input in python
+import math
 
-length = int(input("Enter the length of the rectangle: "))
-width = int(input("Enter the width of the rectangle: "))
 
-area = length * width
+radius = float(input("Enter the radius of the circle: "))
 
-print("The area of the rectangle is: ", area)
+circumference = 2 * math.pi * radius
+
+print(f"The circumference of the circle is: {round(circumference, 2)}")
