@@ -1,3 +1,4 @@
+# main.py
 age = int(input("Enter your age: "))
 
 
