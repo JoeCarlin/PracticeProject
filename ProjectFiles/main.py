@@ -1,8 +1,7 @@
-# main.py
-age = int(input("Enter your age: "))
+from car import Car
 
+car1 = Car("Toyota", "Corolla", 2015, "Red")
+car2 = Car("Honda", "Civic", 2016, "Blue")
+car3 = Car("Ford", "Mustang", 2014, "Black")
 
-if age < 18:
-    print("You arent allowed to get a credit card")
-else:
-    print("You can get a credit card")
+car3.describe()
