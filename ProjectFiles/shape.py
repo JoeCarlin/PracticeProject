@@ -25,6 +25,7 @@ class Triangle(Shape):
 
 circle = Circle("red", True, 5)
 square = Square("blue", False, 10)
+triangle = Triangle("green", True, 5, 10)
 
 print(circle.color)
 print(circle.is_filled)
