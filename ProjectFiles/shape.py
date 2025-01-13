@@ -28,4 +28,4 @@ square = Square("blue", False, 10)
 
 print(circle.color)
 print(circle.is_filled)
-print(circle.radius)    
+print(circle.radius)
