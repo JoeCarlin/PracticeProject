@@ -1,1 +1,1 @@
-print("Hello World, this is my python learning project!\nI am practicing my skills in python programming language.")
+print("Hello World, its joe here")
