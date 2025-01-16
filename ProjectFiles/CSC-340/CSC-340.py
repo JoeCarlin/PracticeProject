@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # read in an image in opencv
-image = cv2.imread("/Users/joecarlin30/Desktop/School/CSC-331/Project/PythonProjects/ProjectFiles/CSC-340/Media/cones1.png")
+image = cv2.imread("ProjectFiles/CSC-340/Media/cones1.png")
 
 # get size of image
 numRows = image.shape[0]
