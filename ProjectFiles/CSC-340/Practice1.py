@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 # load and image in grayscale
-img = cv2.imread("ProjectFiles/CSC-340/Media/cones1.png", 0)
+img = cv2.imread("ProjectFiles/CSC-340/Media/cones1.png", -1)
 
 # resize the image
 img = cv2.resize(img, (0, 0), fx=0.5, fy=0.5)
