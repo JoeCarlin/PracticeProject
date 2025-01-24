@@ -17,5 +17,5 @@ while True:
     cv2.imshow('frame', frame)
 
     # wait for 1 ms and check if the user pressed the 'q' key
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(1) == ord('q'):
         break
