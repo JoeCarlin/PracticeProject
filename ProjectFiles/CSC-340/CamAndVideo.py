@@ -19,3 +19,7 @@ while True:
     # wait for 1 ms and check if the user pressed the 'q' key
     if cv2.waitKey(1) == ord('q'):
         break
+
+# release the video capture device and close all OpenCV windows
+cap.release()
+cv2.destroyAllWindows()
