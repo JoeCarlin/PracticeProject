@@ -12,4 +12,5 @@ taylor_approx = x - (x**3) / math.factorial(3) + (x**5) / math.factorial(5) - (x
 # Relative error
 relative_error = (true_value - taylor_approx) / true_value * 100
 
-true_value, taylor_approx, round(relative_error, 4)
+# Print the relative error rounded to 4 decimal places
+print(f"{round(relative_error, 4)}")
