@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-image1 = cv2.imread("cones1.png")
+image1 = cv2.imread("ProjectFiles/CSC-340/Media/cones1.png")
 
 numRows = image1.shape[0]
 numCols = image1.shape[1]  
