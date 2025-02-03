@@ -1,0 +1,41 @@
+import numpy as np
+import cv2
+import math
+
+def rotate_image(image, angle):
+    (h, w) = image.shape[:2]
+    center = (w // 2, h // 2)
+
+    # Create a larger image with a black border
+    diagonal = int(math.sqrt(h**2 + w**2))
+    bordered_image = np.zeros((diagonal, diagonal, 3), dtype=image.dtype)
+    offset = (diagonal - h) // 2
+    bordered_image[offset:offset+h, offset:offset+w] = image
+
+    # Compute the rotation matrix
+    M = cv2.getRotationMatrix2D((diagonal//2, diagonal//2), angle, 1.0)
+
+    # Rotate the image
+    rotated = cv2.warpAffine(bordered_image, M, (diagonal, diagonal), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+
+    return rotated
+
+# Load the image
+image1 = cv2.imread("ProjectFiles/CSC-340/Media/cones1.png")
+
+# Check if image was loaded correctly
+if image1 is None:
+    print("Error: Image not found or could not be loaded.")
+else:
+    # Rotate image
+    rotated_image = rotate_image(image1, 45)
+
+    # Save the rotated image to the specified path
+    save_path = "ProjectFiles/CSC-340/Media/rotated_image.jpg"
+    cv2.imwrite(save_path, rotated_image)
+    print(f"Rotated image saved to {save_path}")
+
+    # Display the image
+    cv2.imshow('Rotated Image', rotated_image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
