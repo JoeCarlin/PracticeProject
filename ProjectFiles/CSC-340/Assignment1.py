@@ -59,8 +59,10 @@ image1 = cv2.imread("ProjectFiles/CSC-340/Media/cones1.png")
 if image1 is None:
     print("Error: Image not found or could not be loaded.")
 else:
+    # Define the number of rotations to perform
+    rotate_number = 1
     # Rotate image
-    rotated_image = rotate_image(image1, 45)
+    rotated_image = rotate_image(image1, 30 * rotate_number)
 
     # Save the rotated image to the specified path
     save_path = "ProjectFiles/CSC-340/Media/rotated_image.jpg"
