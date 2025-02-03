@@ -9,16 +9,48 @@ def rotate_image(image, angle):
     # Create a larger image with a black border
     diagonal = int(math.sqrt(h**2 + w**2))
     bordered_image = np.zeros((diagonal, diagonal, 3), dtype=image.dtype)
-    offset = (diagonal - h) // 2
-    bordered_image[offset:offset+h, offset:offset+w] = image
+    offset_y = (diagonal - h) // 2
+    offset_x = (diagonal - w) // 2
+    bordered_image[offset_y:offset_y+h, offset_x:offset_x+w] = image
 
-    # Compute the rotation matrix
-    M = cv2.getRotationMatrix2D((diagonal//2, diagonal//2), angle, 1.0)
+    # Compute the rotation matrix components
+    theta = np.radians(angle)
+    cos_theta = np.cos(theta)
+    sin_theta = np.sin(theta)
 
-    # Rotate the image
-    rotated = cv2.warpAffine(bordered_image, M, (diagonal, diagonal), flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+    # Create an empty image for the rotated result
+    rotated_image = np.zeros_like(bordered_image)
 
-    return rotated
+    # Perform the rotation manually
+    for i in range(diagonal):
+        for j in range(diagonal):
+            # Step 1: Translate (center the origin)
+            Ty, Tx = i - diagonal // 2, j - diagonal // 2
+
+            # Step 2: Rotate (using 2D rotation matrix formula)
+            Rx = Tx * cos_theta - Ty * sin_theta
+            Ry = Tx * sin_theta + Ty * cos_theta
+
+            # Step 3: Translate back
+            Fy, Fx = Ry + diagonal // 2, Rx + diagonal // 2
+
+            # Bilinear interpolation
+            if 0 <= Fy < diagonal - 1 and 0 <= Fx < diagonal - 1:
+                x1, y1 = int(Fx), int(Fy)
+                x2, y2 = x1 + 1, y1 + 1
+
+                a = Fx - x1
+                b = Fy - y1
+
+                if x2 < diagonal and y2 < diagonal:
+                    rotated_image[i, j] = (
+                        (1 - a) * (1 - b) * bordered_image[y1, x1] +
+                        a * (1 - b) * bordered_image[y1, x2] +
+                        (1 - a) * b * bordered_image[y2, x1] +
+                        a * b * bordered_image[y2, x2]
+                    )
+
+    return rotated_image
 
 # Load the image
 image1 = cv2.imread("ProjectFiles/CSC-340/Media/cones1.png")
