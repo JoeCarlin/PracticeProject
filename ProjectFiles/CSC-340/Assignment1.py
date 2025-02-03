@@ -21,7 +21,7 @@ def rotate_image(image, angle):
     # Create an empty image for the rotated result
     rotated_image = np.zeros_like(bordered_image)
 
-    # Perform the rotation manually
+    # Perform the rotation
     for i in range(diagonal):
         for j in range(diagonal):
             # Step 1: Translate (center the origin)
@@ -62,7 +62,7 @@ else:
     # Define the number of rotations to perform
     rotate_number = 1
     # Rotate image
-    rotated_image = rotate_image(image1, 30 * rotate_number)
+    rotated_image = rotate_image(image1, 45 * rotate_number)
 
     # Save the rotated image to the specified path
     save_path = "ProjectFiles/CSC-340/Media/rotated_image.jpg"
