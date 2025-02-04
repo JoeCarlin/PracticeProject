@@ -61,7 +61,7 @@ if image1 is None:
 else:
     # Rotation parameters
     initial_angle = 0      # Starting angle for the first rotation
-    step_size = 20         # How much to rotate each time (degrees)
+    step_size = 90         # How much to rotate each time (degrees)
     rotations = 3          # Number of rotations to apply
 
     for i in range(rotations):
