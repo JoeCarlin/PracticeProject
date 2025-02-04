@@ -59,17 +59,24 @@ image1 = cv2.imread("ProjectFiles/CSC-340/Media/cones1.png")
 if image1 is None:
     print("Error: Image not found or could not be loaded.")
 else:
-    # Define the number of rotations to perform
-    rotate_number = 1
-    # Rotate image
-    rotated_image = rotate_image(image1, 45 * rotate_number)
+    # Rotation parameters
+    initial_angle = 0      # Starting angle for the first rotation
+    step_size = 20         # How much to rotate each time (degrees)
+    rotations = 3          # Number of rotations to apply
 
-    # Save the rotated image to the specified path
-    save_path = "ProjectFiles/CSC-340/Media/rotated_image.jpg"
-    cv2.imwrite(save_path, rotated_image)
-    print(f"Rotated image saved to {save_path}")
+    for i in range(rotations):
+        angle = initial_angle + (i * step_size)  # Incrementing angle with each rotation
+        rotated_image = rotate_image(image1, angle)
 
-    # Display the image
-    cv2.imshow('Rotated Image', rotated_image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+        # Save the rotated image
+        save_path = f"ProjectFiles/CSC-340/Media/rotated_image_{angle}.jpg"
+        cv2.imwrite(save_path, rotated_image)
+        print(f"Rotated image saved to {save_path} - {angle}° rotation")
+
+        # Display the rotated image
+        cv2.imshow(f'Rotated Image ({angle}°)', rotated_image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        # Print rotation details
+        print(f"Image rotated {angle}° with steps of {step_size}°, {i+1} rotation operation(s) applied so far.")
