@@ -1,106 +1,69 @@
-import imaplib
-import email
-from email.header import decode_header
+import hashlib
+import re
+import tldextract
 
-# Email credentials (use an App Password for Gmail, not your main password)
-username = "joecarlin30@gmail.com"
-password = "jncarlin98720"  # Replace with your app password
+# Generate a hash signature for an email
+def generate_signature(email_content):
+    return hashlib.sha256(email_content.encode()).hexdigest()
 
-# Connect to Gmail's IMAP server
-mail = imaplib.IMAP4_SSL("imap.gmail.com")
+# Compare email signature against spam signatures
+def is_signature_spam(email_content, spam_signatures):
+    email_signature = generate_signature(email_content)
+    return email_signature in spam_signatures
 
-# Login to your account
-try:
-    mail.login(username, password)
-    print("Logged in successfully!")
-except imaplib.IMAP4.error:
-    print("Failed to login. Please check your credentials.")
-    exit()
+# Extract links from an email
+def extract_links(email_content):
+    return re.findall(r'http[s]?://\S+', email_content)
 
-# Select the mailbox you want to check
-mail.select("inbox")
+# Check domain's trustworthiness (basic version)
+def is_link_trustworthy(link):
+    domain = tldextract.extract(link).domain
+    trusted_domains = ["example", "google", "yahoo"]  # Add legitimate domains here
+    return domain in trusted_domains
 
-# Search for all emails in the inbox
-status, messages = mail.search(None, "ALL")
-if status != "OK":
-    print("No messages found!")
-    exit()
-
-# Convert messages to a list of email IDs
-email_ids = messages[0].split()
-
-# Define spam keywords
-spam_keywords = ["win", "free", "prize", "click here", "subscribe", "buy now"]
-
-# Function to check if an email is spam
-def is_spam(email_body):
-    for keyword in spam_keywords:
-        if keyword in email_body.lower():
+# Determine if email is spam based on links
+def is_hyperlink_spam(email_content):
+    links = extract_links(email_content)
+    for link in links:
+        if not is_link_trustworthy(link):
             return True
     return False
 
-# Iterate through each email
-for email_id in email_ids:
-    # Fetch the email by ID
-    status, msg_data = mail.fetch(email_id, "(RFC822)")
-    if status != "OK":
-        print(f"Failed to fetch email ID {email_id.decode()}")
-        continue
-    
-    for response_part in msg_data:
-        if isinstance(response_part, tuple):
-            # Parse the email content
-            msg = email.message_from_bytes(response_part[1])
-            
-            # Decode email subject
-            subject, encoding = decode_header(msg["subject"])[0]
-            if isinstance(subject, bytes):
-                # If it's a bytes, decode to string
-                subject = subject.decode(encoding if encoding else "utf-8")
-            
-            # Decode email sender
-            from_, encoding = decode_header(msg.get("From"))[0]
-            if isinstance(from_, bytes):
-                from_ = from_.decode(encoding if encoding else "utf-8")
-            
-            print(f"Processing email from: {from_}, Subject: {subject}")
-            
-            # If the email message is multipart
-            if msg.is_multipart():
-                for part in msg.walk():
-                    # Extract content type of email
-                    content_type = part.get_content_type()
-                    content_disposition = str(part.get("Content-Disposition"))
-                    
-                    try:
-                        # Get the email body
-                        body = part.get_payload(decode=True).decode()
-                    except:
-                        body = ""
-                    
-                    # Check if the content is plain text
-                    if content_type == "text/plain" and "attachment" not in content_disposition:
-                        if is_spam(body):
-                            print(f"Spam detected! Moving email to spam folder.")
-                            # Move the email to the spam folder
-                            mail.store(email_id, '+X-GM-LABELS', '\\Spam')
-                        else:
-                            print("Legitimate email.")
-            else:
-                # If the email message isn't multipart
-                content_type = msg.get_content_type()
-                try:
-                    body = msg.get_payload(decode=True).decode()
-                except:
-                    body = ""
-                
-                if content_type == "text/plain":
-                    if is_spam(body):
-                        print(f"Spam detected! Moving email to spam folder.")
-                        mail.store(email_id, '+X-GM-LABELS', '\\Spam')
-                    else:
-                        print("Legitimate email.")
+# Check for unsubscribe links
+def has_unsubscribe_link(email_content):
+    return "unsubscribe" in email_content.lower()
 
-# Logout and close the connection
-mail.logout()
-print("Logged out successfully!")
+# Determine if email is spam based on unsubscribe link absence
+def is_unsubscribe_spam(email_content):
+    return not has_unsubscribe_link(email_content)
+
+# Load spam signatures
+def load_spam_signatures(file_path):
+    with open(file_path, "r") as f:
+        return f.read().splitlines()
+
+# Classify email
+def classify_email(email_content, spam_signatures):
+    if is_signature_spam(email_content, spam_signatures):
+        return "Spam"
+    if is_hyperlink_spam(email_content):
+        return "Spam"
+    if is_unsubscribe_spam(email_content):
+        return "Spam"
+    return "Not Spam"
+
+# Main program
+def main():
+    # Load spam signatures
+    spam_signatures = load_spam_signatures("spam_signatures.txt")
+
+    # Process email files
+    email_files = ["email1.txt", "email2.txt"]  # Add your email file names here
+    for email_file in email_files:
+        with open(email_file, "r") as f:
+            email_content = f.read()
+        classification = classify_email(email_content, spam_signatures)
+        print(f"Email {email_file}: {classification}")
+
+if __name__ == "__main__":
+    main()
