@@ -21,6 +21,10 @@ def rotate_image(image, angle):
     # Create an empty image for the rotated result
     rotated_image = np.zeros_like(bordered_image)
 
+    total_color_error = 0
+    total_pixel_rounding_error = 0
+    pixel_count = 0
+
     # Perform the rotation
     for i in range(diagonal):
         for j in range(diagonal):
@@ -43,12 +47,31 @@ def rotate_image(image, angle):
                 b = Fy - y1
 
                 if x2 < diagonal and y2 < diagonal:
-                    rotated_image[i, j] = (
+                    interpolated_pixel = (
                         (1 - a) * (1 - b) * bordered_image[y1, x1] +
                         a * (1 - b) * bordered_image[y1, x2] +
                         (1 - a) * b * bordered_image[y2, x1] +
                         a * b * bordered_image[y2, x2]
                     )
+                    rotated_image[i, j] = interpolated_pixel
+
+                    # Calculate color error
+                    original_pixel = bordered_image[y1, x1]
+                    color_error = np.abs(interpolated_pixel - original_pixel).sum()
+                    total_color_error += color_error
+
+                    # Calculate pixel rounding error
+                    rounding_error = np.abs(Fx - x1) + np.abs(Fy - y1)
+                    total_pixel_rounding_error += rounding_error
+
+                    pixel_count += 1
+
+    # Calculate average errors
+    avg_color_error = total_color_error / pixel_count
+    avg_pixel_rounding_error = total_pixel_rounding_error / pixel_count
+
+    print(f"Average Color Error: {avg_color_error}")
+    print(f"Average Pixel Rounding Error: {avg_pixel_rounding_error}")
 
     return rotated_image
 
