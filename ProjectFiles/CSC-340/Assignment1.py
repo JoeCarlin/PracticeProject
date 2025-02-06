@@ -46,7 +46,7 @@ def rotate_image(image, angle_step):
 
 def calculate_absolute_error(original, rotated, border):
     cropped_rotated = rotated[border:border+original.shape[0], border:border+original.shape[1]]
-    return np.sum(np.abs(original.astype(int) - cropped_rotated.astype(int)))
+    return np.sum(np.abs(original.astype(int) - cropped_rotated.astype(int))) / (original.shape[0] * original.shape[1] * original.shape[2])
 
 def calculate_rounding_error(original, rotated, num_rotations, num_pixels):
     error = 0
@@ -64,17 +64,20 @@ def main():
         print("Error: Unable to read the image file. Please check the file path and integrity.")
         return
     
-    angle_step = 45
+    angle_step = 180
     rotated_image = rotate_image(image, angle_step)
     
     border = max(image.shape[:2])
     absolute_error = calculate_absolute_error(image, rotated_image, border)
     rounding_error = calculate_rounding_error(image, rotated_image, 360 // angle_step, image.shape[0] * image.shape[1])
     
-    print(f"Absolute Color Error: {absolute_error}")
-    print(f"Pixel Rounding Error: {rounding_error}")
+    print(f"Angle Step Size: {angle_step} degrees")
+    print(f"# Rotations: {360 // angle_step}")
+    print(f"Absolute Color Error: {absolute_error:.3f}")
+    print(f"Pixel Rounding Error: {rounding_error:.3f}")
+    print(f"(# Rotations) * (Pixel Displacement): {(360 // angle_step) * rounding_error:.3f}")
     
-    cv2.imwrite('rotated_image.png', rotated_image)
+    cv2.imwrite('ProjectFiles/CSC-340/Media/rotated_image.png', rotated_image)
 
 if __name__ == "__main__":
     main()
