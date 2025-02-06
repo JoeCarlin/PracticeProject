@@ -7,7 +7,7 @@ def rotate_image(image, angle):
     center = (w // 2, h // 2)
 
     # Create a larger image with a black border
-    diagonal = int(math.sqrt(h**2 + w**2))
+    diagonal = int(math.sqrt(h**2 + w**2)) 
     bordered_image = np.zeros((diagonal, diagonal, 3), dtype=image.dtype)
     offset_y = (diagonal - h) // 2
     offset_x = (diagonal - w) // 2
@@ -23,6 +23,7 @@ def rotate_image(image, angle):
 
     total_color_error = 0
     total_pixel_rounding_error = 0
+    total_pixel_displacement = 0
     pixel_count = 0
 
     # Perform the rotation
@@ -64,6 +65,10 @@ def rotate_image(image, angle):
                     rounding_error = np.abs(Fx - x1) + np.abs(Fy - y1)
                     total_pixel_rounding_error += rounding_error
 
+                    # Calculate pixel displacement
+                    pixel_displacement = np.sqrt((Fx - j)**2 + (Fy - i)**2)
+                    total_pixel_displacement += pixel_displacement
+
                     pixel_count += 1
 
     # Calculate average errors
@@ -73,7 +78,7 @@ def rotate_image(image, angle):
     print(f"Average Color Error: {avg_color_error}")
     print(f"Average Pixel Rounding Error: {avg_pixel_rounding_error}")
 
-    return rotated_image
+    return rotated_image, total_pixel_displacement
 
 # Load the image
 image1 = cv2.imread("ProjectFiles/CSC-340/Media/cones1.png")
@@ -83,13 +88,15 @@ if image1 is None:
     print("Error: Image not found or could not be loaded.")
 else:
     # Rotation parameters
-    initial_angle = 0      # Starting angle for the first rotation
-    step_size = 90         # How much to rotate each time (degrees)
-    rotations = 3          # Number of rotations to apply
+    step_size = 45         # How much to rotate each time (degrees)
+    rotations = 8          # Number of rotations to apply
+
+    total_displacement = 0
 
     for i in range(rotations):
-        angle = initial_angle + (i * step_size)  # Incrementing angle with each rotation
-        rotated_image = rotate_image(image1, angle)
+        angle = step_size * (i + 1)  # Incrementing angle with each rotation
+        rotated_image, pixel_displacement = rotate_image(image1, angle)
+        total_displacement += pixel_displacement
 
         # Save the rotated image
         save_path = f"ProjectFiles/CSC-340/Media/rotated_image_{angle}.jpg"
@@ -103,3 +110,7 @@ else:
 
         # Print rotation details
         print(f"Image rotated {angle}° with steps of {step_size}°, {i+1} rotation operation(s) applied so far.")
+
+    # Calculate and print the total displacement
+    total_rotation_displacement = total_displacement
+    print(f"Total Rotation Displacement: {total_rotation_displacement}")
