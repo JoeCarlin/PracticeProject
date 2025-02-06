@@ -48,14 +48,32 @@ def calculate_absolute_error(original, rotated, border):
     cropped_rotated = rotated[border:border+original.shape[0], border:border+original.shape[1]]
     return np.sum(np.abs(original.astype(int) - cropped_rotated.astype(int))) / (original.shape[0] * original.shape[1] * original.shape[2])
 
-def calculate_rounding_error(original, rotated, num_rotations, num_pixels):
+def calculate_rounding_error(original, rotated, angle_step, num_pixels):
     error = 0
-    for x in range(original.shape[1]):
-        for y in range(original.shape[0]):
-            original_coords = np.array([x, y])
-            rotated_coords = multiply_matrices(get_rotation_matrix(360), original_coords)
-            error += np.linalg.norm(original_coords - rotated_coords)
-    return error / (num_pixels * num_rotations)
+    center_x, center_y = original.shape[1] // 2, original.shape[0] // 2
+    current_rotation_matrix = np.eye(2)  # Start with the identity matrix
+
+    for _ in range(360 // angle_step):
+        rotation_matrix = get_rotation_matrix(angle_step)
+        current_rotation_matrix = multiply_matrices(rotation_matrix, current_rotation_matrix)
+        
+        for x in range(original.shape[1]):
+            for y in range(original.shape[0]):
+                # Center the origin
+                original_coords = np.array([x - center_x, y - center_y])
+                rotated_coords = multiply_matrices(current_rotation_matrix, original_coords)
+                
+                # Translate back to original space
+                rotated_coords[0] += center_x
+                rotated_coords[1] += center_y
+                rounded_coords = np.round(rotated_coords).astype(int)
+                
+                # Calculate rounding error for valid pixel coordinates
+                if 0 <= rounded_coords[0] < original.shape[1] and \
+                   0 <= rounded_coords[1] < original.shape[0]:
+                    error += np.linalg.norm(rotated_coords - rounded_coords)
+
+    return error / num_pixels
 
 def main():
     image = cv2.imread('ProjectFiles/CSC-340/Media/cones1.png')
@@ -64,12 +82,12 @@ def main():
         print("Error: Unable to read the image file. Please check the file path and integrity.")
         return
     
-    angle_step = 180
+    angle_step = 120
     rotated_image = rotate_image(image, angle_step)
     
     border = max(image.shape[:2])
     absolute_error = calculate_absolute_error(image, rotated_image, border)
-    rounding_error = calculate_rounding_error(image, rotated_image, 360 // angle_step, image.shape[0] * image.shape[1])
+    rounding_error = calculate_rounding_error(image, rotated_image, angle_step, image.shape[0] * image.shape[1])
     
     print(f"Angle Step Size: {angle_step} degrees")
     print(f"# Rotations: {360 // angle_step}")
