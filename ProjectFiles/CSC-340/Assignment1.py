@@ -1,116 +1,98 @@
-import numpy as np
 import cv2
+import numpy as np
 import math
 
-def rotate_image(image, angle):
-    (h, w) = image.shape[:2]
-    center = (w // 2, h // 2)
+# Matrix multiplication function
+def multiply_matrices(A, B):
+    # A and B are 2D NumPy arrays (matrices)
+    return np.dot(A, B)
 
-    # Create a larger image with a black border
-    diagonal = int(math.sqrt(h**2 + w**2)) 
-    bordered_image = np.zeros((diagonal, diagonal, 3), dtype=image.dtype)
-    offset_y = (diagonal - h) // 2
-    offset_x = (diagonal - w) // 2
-    bordered_image[offset_y:offset_y+h, offset_x:offset_x+w] = image
+# Rotation matrix function
+def get_rotation_matrix(angle):
+    theta = math.radians(angle)
+    return np.array([[math.cos(theta), -math.sin(theta)], 
+                     [math.sin(theta), math.cos(theta)]])
 
-    # Compute the rotation matrix components
-    theta = np.radians(angle)
-    cos_theta = np.cos(theta)
-    sin_theta = np.sin(theta)
-
-    # Create an empty image for the rotated result
-    rotated_image = np.zeros_like(bordered_image)
-
-    total_color_error = 0
-    total_pixel_rounding_error = 0
-    total_pixel_displacement = 0
-    pixel_count = 0
-
-    # Perform the rotation
-    for i in range(diagonal):
-        for j in range(diagonal):
-            # Step 1: Translate (center the origin)
-            Ty, Tx = i - diagonal // 2, j - diagonal // 2
-
-            # Step 2: Rotate (using 2D rotation matrix formula)
-            Rx = Tx * cos_theta - Ty * sin_theta
-            Ry = Tx * sin_theta + Ty * cos_theta
-
-            # Step 3: Translate back
-            Fy, Fx = Ry + diagonal // 2, Rx + diagonal // 2
-
-            # Bilinear interpolation
-            if 0 <= Fy < diagonal - 1 and 0 <= Fx < diagonal - 1:
-                x1, y1 = int(Fx), int(Fy)
-                x2, y2 = x1 + 1, y1 + 1
-
-                a = Fx - x1
-                b = Fy - y1
-
-                if x2 < diagonal and y2 < diagonal:
-                    interpolated_pixel = (
-                        (1 - a) * (1 - b) * bordered_image[y1, x1] +
-                        a * (1 - b) * bordered_image[y1, x2] +
-                        (1 - a) * b * bordered_image[y2, x1] +
-                        a * b * bordered_image[y2, x2]
-                    )
-                    rotated_image[i, j] = interpolated_pixel
-
-                    # Calculate color error
-                    original_pixel = bordered_image[y1, x1]
-                    color_error = np.abs(interpolated_pixel - original_pixel).sum()
-                    total_color_error += color_error
-
-                    # Calculate pixel rounding error
-                    rounding_error = np.abs(Fx - x1) + np.abs(Fy - y1)
-                    total_pixel_rounding_error += rounding_error
-
-                    # Calculate pixel displacement
-                    pixel_displacement = np.sqrt((Fx - j)**2 + (Fy - i)**2)
-                    total_pixel_displacement += pixel_displacement
-
-                    pixel_count += 1
-
-    # Calculate average errors
-    avg_color_error = total_color_error / pixel_count
-    avg_pixel_rounding_error = total_pixel_rounding_error / pixel_count
-
-    print(f"Average Color Error: {avg_color_error}")
-    print(f"Average Pixel Rounding Error: {avg_pixel_rounding_error}")
-
-    return rotated_image, total_pixel_displacement
-
-# Load the image
-image1 = cv2.imread("ProjectFiles/CSC-340/Media/cones1.png")
-
-# Check if image was loaded correctly
-if image1 is None:
-    print("Error: Image not found or could not be loaded.")
-else:
-    # Rotation parameters
-    step_size = 45         # How much to rotate each time (degrees)
-    rotations = 8          # Number of rotations to apply
-
-    total_displacement = 0
-
-    for i in range(rotations):
-        angle = step_size * (i + 1)  # Incrementing angle with each rotation
-        rotated_image, pixel_displacement = rotate_image(image1, angle)
-        total_displacement += pixel_displacement
-
-        # Save the rotated image
-        save_path = f"ProjectFiles/CSC-340/Media/rotated_image_{angle}.jpg"
-        cv2.imwrite(save_path, rotated_image)
-        print(f"Rotated image saved to {save_path} - {angle}° rotation")
-
-        # Display the rotated image
-        cv2.imshow(f'Rotated Image ({angle}°)', rotated_image)
+# Function to rotate image by a given angle using matrix multiplication
+def rotate_image(image, angle, step_size):
+    rows, cols = image.shape[:2]
+    center = (cols / 2, rows / 2)
+    
+    # Create an empty canvas with black border around the original image
+    new_rows, new_cols = rows + 2 * (rows // 10), cols + 2 * (cols // 10)
+    new_image = np.zeros((new_rows, new_cols, 3), dtype=np.uint8)
+    new_image[rows//10:rows//10+rows, cols//10:cols//10+cols] = image
+    
+    # Apply rotation
+    for i in range(0, 360, step_size):
+        rotation_matrix = get_rotation_matrix(i)
+        rotated_image = np.copy(new_image)
+        
+        # Perform the rotation (matrix multiplication with each pixel coordinate)
+        for x in range(new_cols):
+            for y in range(new_rows):
+                old_x = (x - new_cols / 2)
+                old_y = (y - new_rows / 2)
+                
+                # Rotate the pixel
+                new_coords = multiply_matrices(rotation_matrix, np.array([old_x, old_y]))
+                new_x = int(new_coords[0] + new_cols / 2)
+                new_y = int(new_coords[1] + new_rows / 2)
+                
+                # Check bounds and set pixel
+                if 0 <= new_x < new_cols and 0 <= new_y < new_rows:
+                    rotated_image[y, x] = new_image[new_y, new_x]
+        
+        # Display intermediate rotated image
+        cv2.imshow(f'Rotated by {i} degrees', rotated_image)
         cv2.waitKey(0)
-        cv2.destroyAllWindows()
 
-        # Print rotation details
-        print(f"Image rotated {angle}° with steps of {step_size}°, {i+1} rotation operation(s) applied so far.")
+    cv2.destroyAllWindows()
+    return rotated_image
 
-    # Calculate and print the total displacement
-    total_rotation_displacement = total_displacement
-    print(f"Total Rotation Displacement: {total_rotation_displacement}")
+# Color Error Calculation (Absolute Color Error)
+def calculate_absolute_error(original_image, rotated_image):
+    error = np.abs(original_image.astype(np.int32) - rotated_image.astype(np.int32))
+    return np.sum(error)
+
+# Pixel Rounding Error Calculation
+def calculate_rounding_error(original_image, rotated_image, num_rotations, num_pixels):
+    rounding_error = 0
+    for i in range(rotated_image.shape[0]):
+        for j in range(rotated_image.shape[1]):
+            rounding_error += np.linalg.norm([i - j, j - i])
+    
+    return rounding_error / (num_pixels * num_rotations)
+
+def main():
+    image = cv2.imread('ProjectFiles/CSC-340/Media/cones1.png')
+    
+    if image is None:
+        print("Error: Unable to read the image file. Please check the file path and integrity.")
+        return
+    
+    # Add black border around the image
+    rows, cols = image.shape[:2]
+    border = 20
+    bordered_image = np.zeros((rows + 2*border, cols + 2*border, 3), dtype=np.uint8)
+    bordered_image[border:border+rows, border:border+cols] = image
+    
+    step_sizes = [45, 60, 90, 120, 180, 360]  # Step sizes
+    for step in step_sizes:
+        rotated_image = rotate_image(bordered_image, 360, step)
+        
+        # Color error
+        color_error = calculate_absolute_error(image, rotated_image)
+        
+        # Pixel rounding error
+        rounding_error = calculate_rounding_error(image, rotated_image, len(step_sizes), rows * cols)
+        
+        # Display the results
+        print(f"Rotation Step Size: {step}°")
+        print(f"Absolute Color Error: {color_error}")
+        print(f"Pixel Rounding Error: {rounding_error}")
+        # Save rotated image
+        cv2.imwrite(f"ProjectFiles/CSC-340/Media/rotated_image_{step}.png", rotated_image)
+
+if __name__ == "__main__":
+    main()
