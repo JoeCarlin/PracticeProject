@@ -82,7 +82,7 @@ def main():
         print("Error: Unable to read the image file. Please check the file path and integrity.")
         return
     
-    angle_step = 120
+    angle_step = 45
     rotated_image = rotate_image(image, angle_step)
     
     border = max(image.shape[:2])
