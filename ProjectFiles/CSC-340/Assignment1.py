@@ -81,14 +81,17 @@ def main():
     if image is None:
         print("Error: Unable to read the image file. Please check the file path and integrity.")
         return
-    
+
+    # Rotate the image
     angle_step = 45
     rotated_image = rotate_image(image, angle_step)
     
+    #Calculate the errors
     border = max(image.shape[:2])
     absolute_error = calculate_absolute_error(image, rotated_image, border)
     rounding_error = calculate_rounding_error(image, rotated_image, angle_step, image.shape[0] * image.shape[1])
     
+    # Print the results
     print(f"Angle Step Size: {angle_step} degrees")
     print(f"# Rotations: {360 // angle_step}")
     print(f"Absolute Color Error: {absolute_error:.3f}")
