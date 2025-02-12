@@ -3,7 +3,12 @@ import numpy as np
 import math
 
 def multiply_matrices(A, B):
-    return np.dot(A, B)
+    result = np.zeros((A.shape[0], B.shape[1]))
+    for i in range(A.shape[0]):
+        for j in range(B.shape[1]):
+            for k in range(A.shape[1]):
+                result[i, j] += A[i, k] * B[k, j]
+    return result
 
 def get_rotation_matrix(angle):
     theta = math.radians(angle)
@@ -30,9 +35,9 @@ def rotate_image(image, angle_step):
                 old_x = x - new_cols / 2
                 old_y = y - new_rows / 2
                 
-                new_coords = multiply_matrices(rotation_matrix, np.array([old_x, old_y]))
-                new_x = int(new_coords[0] + new_cols / 2)
-                new_y = int(new_coords[1] + new_rows / 2)
+                new_coords = multiply_matrices(rotation_matrix, np.array([[old_x], [old_y]]))
+                new_x = int(new_coords[0, 0] + new_cols / 2)
+                new_y = int(new_coords[1, 0] + new_rows / 2)
                 
                 if 0 <= new_x < new_cols and 0 <= new_y < new_rows:
                     temp_image[y, x] = new_image[new_y, new_x]
@@ -60,7 +65,7 @@ def calculate_rounding_error(original, rotated, angle_step, num_pixels):
         for x in range(original.shape[1]):
             for y in range(original.shape[0]):
                 # Center the origin
-                original_coords = np.array([x - center_x, y - center_y])
+                original_coords = np.array([[x - center_x], [y - center_y]])
                 rotated_coords = multiply_matrices(current_rotation_matrix, original_coords)
                 
                 # Translate back to original space
@@ -69,8 +74,8 @@ def calculate_rounding_error(original, rotated, angle_step, num_pixels):
                 rounded_coords = np.round(rotated_coords).astype(int)
                 
                 # Calculate rounding error for valid pixel coordinates
-                if 0 <= rounded_coords[0] < original.shape[1] and \
-                   0 <= rounded_coords[1] < original.shape[0]:
+                if 0 <= rounded_coords[0, 0] < original.shape[1] and \
+                   0 <= rounded_coords[1, 0] < original.shape[0]:
                     error += np.linalg.norm(rotated_coords - rounded_coords)
 
     return error / num_pixels
@@ -86,7 +91,7 @@ def main():
     angle_step = 45
     rotated_image = rotate_image(image, angle_step)
     
-    #Calculate the errors
+    # Calculate the errors
     border = max(image.shape[:2])
     absolute_error = calculate_absolute_error(image, rotated_image, border)
     rounding_error = calculate_rounding_error(image, rotated_image, angle_step, image.shape[0] * image.shape[1])
