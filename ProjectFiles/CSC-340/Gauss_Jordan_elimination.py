@@ -1,37 +1,35 @@
-# Define the matrix and the constants vector
-A = [
-    [1, 0, 2],
-    [2, -1, 3],
-    [4, 1, 8]
-]
-
-b = [1, -1, 2]
-
-# Function to perform Gauss-Jordan elimination
 def gauss_jordan_elimination(A, b):
     n = len(A)
     
-    # Augment the matrix A with the vector b
-    for i in range(n):
-        A[i].append(b[i])
+    # Step 1: Create the augmented matrix
+    augmented_matrix = [A[i] + [b[i]] for i in range(n)]
     
-    # Perform the elimination process
+    # Step 2: Perform the elimination process
     for i in range(n):
-        # Make the diagonal element 1
-        diag = A[i][i]
-        for j in range(len(A[i])):
-            A[i][j] = A[i][j] / diag
+        # Step 2a: Make the diagonal element 1
+        diag = augmented_matrix[i][i]
+        for j in range(len(augmented_matrix[i])):
+            augmented_matrix[i][j] = augmented_matrix[i][j] / diag
         
-        # Make the other elements in the current column 0
+        # Step 2b: Make the other elements in the current column 0
         for k in range(n):
             if k != i:
-                factor = A[k][i]
-                for j in range(len(A[i])):
-                    A[k][j] = A[k][j] - factor * A[i][j]
+                factor = augmented_matrix[k][i]
+                for j in range(len(augmented_matrix[i])):
+                    augmented_matrix[k][j] = augmented_matrix[k][j] - factor * augmented_matrix[i][j]
     
-    # Extract the solution
-    solution = [A[i][-1] for i in range(n)]
+    # Step 3: Extract the solution
+    solution = [augmented_matrix[i][-1] for i in range(n)]
     return solution
+
+# Define the matrix and the constants vector
+A = [
+    [1, 0, 2],  # Coefficients of the first equation
+    [2, -1, 3], # Coefficients of the second equation
+    [4, 1, 8]   # Coefficients of the third equation
+]
+
+b = [1, -1, 2] # Constants vector
 
 # Test the function with the given matrix
 solution = gauss_jordan_elimination(A, b)
