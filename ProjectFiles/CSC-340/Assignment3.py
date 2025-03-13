@@ -38,7 +38,19 @@ for y in range(1, height-1):
         # Compute the "cornerness" value
         cornerness[y, x] = detM - 0.04 * (traceM ** 2)
 
-# Step 6: Visualize the "cornerness" image
-cv2.imshow('Cornerness', cornerness)
+# Step 6: Identify corners by thresholding the cornerness values
+threshold = 0.01 * cornerness.max()
+corners = np.zeros_like(image)
+corners[cornerness > threshold] = 255
+
+# Step 7: Draw red dots on the original image where corners are detected
+output_image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+for y in range(height):
+    for x in range(width):
+        if corners[y, x] == 255:
+            cv2.circle(output_image, (x, y), 1, (0, 0, 255), -1)
+
+# Step 8: Visualize the result
+cv2.imshow('Corners', output_image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
