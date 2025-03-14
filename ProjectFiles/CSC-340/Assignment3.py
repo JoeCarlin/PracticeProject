@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 
 # Step 1: Load the original image
-image = cv2.imread('ProjectFiles/CSC-340/Media/checkerboardSmall.png', cv2.IMREAD_GRAYSCALE)
+image = cv2.imread('ProjectFiles/CSC-340/Media/checkerboard.png', cv2.IMREAD_GRAYSCALE)
 height, width = image.shape
 
 # Step 2: Create empty images for Ix, Iy, Ixx, Iyy, and Ixy
