@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 
 # Load grayscale image
-image = cv2.imread("ProjectFiles/CSC-340/Media/checkerboard.png", cv2.IMREAD_GRAYSCALE)
+image = cv2.imread("ProjectFiles/CSC-340/Media/72256105007-bad-shape-plane.png.webp", cv2.IMREAD_GRAYSCALE)
 height, width = image.shape
 
 # Initialize empty images for gradients and second moment matrix components
