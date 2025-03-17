@@ -54,6 +54,32 @@ for y in range(height):
         if corners[y, x] == 255:
             cv2.circle(output_image, (x, y), 1, (0, 0, 255), -1)
 
+# Divide the image into m blocks and label the n pixels with the highest "cornerness" values as corners
+m = 4  # Number of blocks along each dimension
+n = 5  # Number of top corners in each block
+
+block_height = height // m
+block_width = width // m
+
+ranked_corners = np.zeros_like(image)
+
+for by in range(m):
+    for bx in range(m):
+        block = cornerness[by * block_height:(by + 1) * block_height, bx * block_width:(bx + 1) * block_width]
+        flat_block = block.flatten()
+        if len(flat_block) > 0:
+            top_indices = np.argpartition(flat_block, -n)[-n:]
+            top_indices = np.unravel_index(top_indices, block.shape)
+            for i in range(n):
+                y, x = top_indices[0][i] + by * block_height, top_indices[1][i] + bx * block_width
+                ranked_corners[y, x] = 255
+
+# Draw blue dots on the original image where ranked corners are detected
+for y in range(height):
+    for x in range(width):
+        if ranked_corners[y, x] == 255:
+            cv2.circle(output_image, (x, y), 1, (255, 0, 0), -1)
+
 # Visualize the result
 cv2.imshow('Corners', output_image)
 cv2.waitKey(0)
