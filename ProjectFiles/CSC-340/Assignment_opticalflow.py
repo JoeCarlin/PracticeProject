@@ -151,12 +151,15 @@ def save_intermediate_images(Ix, Iy, It, u, v, out_prefix='flow'):
     cv2.imwrite(f'{out_prefix}_ItIx.png', multiply_and_normalize(It, Ix))
     cv2.imwrite(f'{out_prefix}_ItIy.png', multiply_and_normalize(It, Iy))
     cv2.imwrite(f'{out_prefix}_u.png', normalize_and_convert_to_uint8(u))
-    cv2.imwrite(f'{out_prefix}_v.png', normalize_and_convert_to_uint8(v))
+
+    # 🔽 Normalizing the vertical flow component v to [0,255] and saving
+    norm_v = normalize_and_convert_to_uint8(v)
+    cv2.imwrite(f'{out_prefix}_v.png', norm_v)
 
     # Calculate magnitude of flow and save it
     mag = [[sqrt(u[y][x] ** 2 + v[y][x] ** 2) for x in range(len(u[0]))] for y in range(len(u))]
     cv2.imwrite(f'{out_prefix}_magnitude.png', normalize_and_convert_to_uint8(mag))
-
+    
 def color_flow_image(u, v):
     """
     Create a color-coded image representing the optical flow.
