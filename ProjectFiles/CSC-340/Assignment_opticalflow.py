@@ -259,9 +259,9 @@ def main():
     and display the color-coded flow and arrow overlays.
     """
     # Paths to input images and output
-    img1_path = 'ProjectFiles/CSC-340/Media/house1.jpg'
-    img2_path = 'ProjectFiles/CSC-340/Media/house2.jpg'
-    out_prefix = 'ProjectFiles/CSC-340/Media/house'
+    img1_path = 'ProjectFiles/CSC-340/Media/tree1.jpg'
+    img2_path = 'ProjectFiles/CSC-340/Media/tree2.jpg'
+    out_prefix = 'ProjectFiles/CSC-340/Media/tree2'
 
     # Load and convert to grayscale
     img1 = cv2.imread(img1_path)
