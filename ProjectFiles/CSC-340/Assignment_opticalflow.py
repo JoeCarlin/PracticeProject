@@ -159,7 +159,7 @@ def save_intermediate_images(Ix, Iy, It, u, v, out_prefix='flow'):
     # Calculate magnitude of flow and save it
     mag = [[sqrt(u[y][x] ** 2 + v[y][x] ** 2) for x in range(len(u[0]))] for y in range(len(u))]
     cv2.imwrite(f'{out_prefix}_magnitude.png', normalize_and_convert_to_uint8(mag))
-    
+
 def color_flow_image(u, v):
     """
     Create a color-coded image representing the optical flow.
@@ -259,9 +259,9 @@ def main():
     and display the color-coded flow and arrow overlays.
     """
     # Paths to input images and output
-    img1_path = 'ProjectFiles/CSC-340/Media/sphere1.jpg'
-    img2_path = 'ProjectFiles/CSC-340/Media/sphere2.jpg'
-    out_prefix = 'ProjectFiles/CSC-340/Media/sphere'
+    img1_path = 'ProjectFiles/CSC-340/Media/house1.jpg'
+    img2_path = 'ProjectFiles/CSC-340/Media/house2.jpg'
+    out_prefix = 'ProjectFiles/CSC-340/Media/house'
 
     # Load and convert to grayscale
     img1 = cv2.imread(img1_path)
