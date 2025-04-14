@@ -1,0 +1,32 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Given points
+x = np.array([0, 2, 4, 6])
+y = np.array([-3, 5, -1, 18])
+
+# Use numpy to fit a cubic polynomial (degree = 3)
+coeffs = np.polyfit(x, y, 3)
+
+# Display the polynomial coefficients: ax^3 + bx^2 + cx + d
+a, b, c, d = coeffs
+equation = f"y = {a:.4f}x³ + {b:.4f}x² + {c:.4f}x + {d:.4f}"
+print(f"The cubic polynomial is:\n{equation}")
+
+# Generate fitted values for visualization
+x_fit = np.linspace(min(x), max(x), 100)
+y_fit = np.polyval(coeffs, x_fit)
+
+# Plot the original points and the fitted polynomial
+plt.scatter(x, y, color='red', label='Original Points')
+plt.plot(x_fit, y_fit, color='blue', label='Fitted Polynomial')
+plt.xlabel('x')
+plt.ylabel('y')
+plt.title('Cubic Polynomial Fit')
+plt.legend()
+plt.grid()
+
+# Add the equation to the plot
+plt.text(0.05, 0.85, equation, transform=plt.gca().transAxes, fontsize=10, bbox=dict(facecolor='white', alpha=0.5))
+
+plt.show()

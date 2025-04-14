@@ -1,16 +1,12 @@
-import math
+import numpy as np
 
-# Given value
-x = math.pi / 4
+# Given points
+x = np.array([0, 2, 4, 6])
+y = np.array([-3, 5, -1, 18])
 
-# True value of sin(pi/4)
-true_value = math.sin(x)
+# Use numpy to fit a cubic polynomial (degree = 3)
+coeffs = np.polyfit(x, y, 3)
 
-# Taylor series approximation truncated to 6 terms
-taylor_approx = x - (x**3) / math.factorial(3) + (x**5) / math.factorial(5) - (x**7) / math.factorial(7) + (x**9) / math.factorial(9) - (x**11) / math.factorial(11)
-
-# Relative error
-relative_error = (true_value - taylor_approx) / true_value * 100
-
-# Print the relative error rounded to 4 decimal places
-print(f"{round(relative_error, 4)}")
+# Display the polynomial coefficients: ax^3 + bx^2 + cx + d
+a, b, c, d = coeffs
+print(f"The cubic polynomial is:\ny = {a:.4f}x^3 + {b:.4f}x^2 + {c:.4f}x + {d:.4f}")
