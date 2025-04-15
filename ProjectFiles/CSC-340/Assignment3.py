@@ -134,8 +134,38 @@ def save_blockwise_corners_overlay(img_path, cornerness, m=4, n=10):
     cv2.imwrite(output_path, img)
     print(f"Blockwise corners saved as {output_path}")
 
+# Bonus 2: grayscale cornerness visualization
+def visualize_cornerness_grayscale_manual(cornerness, output_path="ProjectFiles/CSC-340/Media/cornerness_grayscale.jpg"):
+    height, width = cornerness.shape
+    min_val = float('inf')
+    max_val = float('-inf')
+
+    # Find min and max manually
+    for y in range(height):
+        for x in range(width):
+            val = cornerness[y][x]
+            if val < min_val:
+                min_val = val
+            if val > max_val:
+                max_val = val
+
+    # Avoid division by zero
+    if max_val - min_val == 0:
+        max_val += 1e-5
+
+    # Create a grayscale image manually
+    grayscale_img = np.zeros((height, width), dtype=np.uint8)
+    for y in range(height):
+        for x in range(width):
+            norm_val = (cornerness[y][x] - min_val) / (max_val - min_val)
+            gray_val = int(norm_val * 255)
+            grayscale_img[y][x] = gray_val
+
+    cv2.imwrite(output_path, grayscale_img)
+    print(f"Grayscale cornerness visualization saved at {output_path}")
+
 def main():
-    img_path = 'ProjectFiles/CSC-340/Media/360_F_283839302_yt6JIsE96Pj4PydFDcBNKDUnuSpYB9h0.png'
+    img_path = 'ProjectFiles/CSC-340/Media/checkerboard.png'
 
     # Harris corner detection
     cornerness, img = harris_corner_detection(img_path)
@@ -145,6 +175,9 @@ def main():
 
     # Bonus 1: blockwise top corners (using custom ranking)
     save_blockwise_corners_overlay(img_path, cornerness, m=4, n=10)
+
+    # Bonus 2: grayscale cornerness visualization (fixed function name here)
+    visualize_cornerness_grayscale_manual(cornerness)
 
 if __name__ == "__main__":
     main()
