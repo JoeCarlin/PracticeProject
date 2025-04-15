@@ -1,86 +1,104 @@
 import numpy as np
 import cv2
 
-# Load grayscale image
-image = cv2.imread("ProjectFiles/CSC-340/Media/72256105007-bad-shape-plane.png.webp", cv2.IMREAD_GRAYSCALE)
-height, width = image.shape
+def compute_gradients(img):
+    """
+    Compute the gradients of the image (Ix, Iy).
 
-# Initialize empty images for gradients and second moment matrix components
-Ix = np.zeros((height, width))
-Iy = np.zeros((height, width))
-Ixx = np.zeros((height, width))
-Iyy = np.zeros((height, width))
-Ixy = np.zeros((height, width))
+    Args:
+        img: Input grayscale image.
 
-# Compute gradients using Sobel operator
-sobel_x = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
-sobel_y = np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
+    Returns:
+        Ix: Gradient in the x direction.
+        Iy: Gradient in the y direction.
+    """
+    height, width = img.shape
+    Ix = np.zeros_like(img, dtype=np.float32)
+    Iy = np.zeros_like(img, dtype=np.float32)
 
-for y in range(1, height - 1):
-    for x in range(1, width - 1):
-        region = image[y - 1:y + 2, x - 1:x + 2]
-        Ix[y, x] = np.sum(region * sobel_x)
-        Iy[y, x] = np.sum(region * sobel_y)
-        Ixx[y, x] = Ix[y, x] ** 2
-        Iyy[y, x] = Iy[y, x] ** 2
-        Ixy[y, x] = Ix[y, x] * Iy[y, x]
+    for y in range(1, height - 1):
+        for x in range(1, width - 1):
+            # Compute gradients using central difference for spatial gradients
+            Ix[y, x] = (float(img[y, x + 1]) - float(img[y, x - 1])) / 2.0
+            Iy[y, x] = (float(img[y + 1, x]) - float(img[y - 1, x])) / 2.0
 
-# Create an empty image to hold "cornerness" values
-cornerness = np.zeros((height, width))
+    return Ix, Iy
 
-# Loop through the pixels of the image to compute the "cornerness" value
-for y in range(1, height - 1):
-    for x in range(1, width - 1):
-        Sxx = np.sum(Ixx[y - 1:y + 2, x - 1:x + 2])
-        Syy = np.sum(Iyy[y - 1:y + 2, x - 1:x + 2])
-        Sxy = np.sum(Ixy[y - 1:y + 2, x - 1:x + 2])
-        
-        # Compute the determinant and trace of the M matrix
-        detM = Sxx * Syy - Sxy ** 2
-        traceM = Sxx + Syy
-        
-        # Compute the "cornerness" value
-        cornerness[y, x] = detM - 0.04 * (traceM ** 2)
+def compute_gradient_products(Ix, Iy):
+    """Compute the products of gradients: Ixx, Iyy, Ixy"""
+    Ixx = Ix**2
+    Iyy = Iy**2
+    Ixy = Ix * Iy
+    return Ixx, Iyy, Ixy
 
-# Identify corners by thresholding the cornerness values
-threshold = 0.01 * cornerness.max()
-corners = np.zeros_like(image)
-corners[cornerness > threshold] = 255
+def compute_harris_response(Ixx, Iyy, Ixy, k=0.04):
+    """Compute the Harris corner response for each pixel"""
+    height, width = Ixx.shape
+    cornerness = np.zeros_like(Ixx, dtype=np.float32)
+    
+    for y in range(1, height-1):
+        for x in range(1, width-1):
+            # Sum up values in the 3x3 neighborhood
+            Ixx_sum = np.sum(Ixx[y-1:y+2, x-1:x+2])
+            Iyy_sum = np.sum(Iyy[y-1:y+2, x-1:x+2])
+            Ixy_sum = np.sum(Ixy[y-1:y+2, x-1:x+2])
+            
+            # Compute the determinant and trace of the matrix M
+            det_M = Ixx_sum * Iyy_sum - Ixy_sum**2
+            trace_M = Ixx_sum + Iyy_sum
+            
+            # Compute the corner response value
+            R = det_M - k * (trace_M**2)
+            cornerness[y, x] = R
+    
+    return cornerness
 
-# Draw red dots on the original image where corners are detected
-output_image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
-for y in range(height):
-    for x in range(width):
-        if corners[y, x] == 255:
-            cv2.circle(output_image, (x, y), 1, (0, 0, 255), -1)
+def harris_corner_detection(img_path, k=0.04):
+    """Main function to perform Harris Corner Detection"""
+    # Load the image and convert to grayscale
+    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
+    
+    if img is None:
+        raise ValueError("Image not found!")
+    
+    # Step 1: Compute the gradients
+    Ix, Iy = compute_gradients(img)
+    
+    # Step 2: Compute the gradient products
+    Ixx, Iyy, Ixy = compute_gradient_products(Ix, Iy)
+    
+    # Step 3: Compute the Harris corner response
+    cornerness = compute_harris_response(Ixx, Iyy, Ixy, k)
+    
+    return cornerness, img
 
-# Divide the image into m blocks and label the n pixels with the highest "cornerness" values as corners
-m = 4  # Number of blocks along each dimension
-n = 5  # Number of top corners in each block
+def save_corners_overlay(img_path, cornerness, threshold_percentage=0.01):
+    """Save the image with corners overlaid on it"""
+    # Load the original image in color to overlay corners
+    img = cv2.imread(img_path)
+    
+    # Threshold cornerness values to detect corners
+    threshold = threshold_percentage * np.max(cornerness)
+    corners = (cornerness > threshold).astype(np.uint8) * 255  # Create a binary mask for corners
+    
+    # Overlay red on detected corners
+    img[corners == 255] = [0, 0, 255]  # Set detected corner pixels to red
 
-block_height = height // m
-block_width = width // m
+    # Save the result to a file
+    output_path = "ProjectFiles/CSC-340/Media/corners_overlayed.jpg"
+    cv2.imwrite(output_path, img)
+    print(f"Image with corners saved as {output_path}")
 
-ranked_corners = np.zeros_like(image)
+def main():
+    # Define the path for the image
+    img_path = 'ProjectFiles/CSC-340/Media/checkerboard.png'  # Replace with your image path
+    
+    # Perform Harris corner detection
+    cornerness, img = harris_corner_detection(img_path)
+    
+    # Save the image with corners overlaid
+    save_corners_overlay(img_path, cornerness)
 
-for by in range(m):
-    for bx in range(m):
-        block = cornerness[by * block_height:(by + 1) * block_height, bx * block_width:(bx + 1) * block_width]
-        flat_block = block.flatten()
-        if len(flat_block) > 0:
-            top_indices = np.argpartition(flat_block, -n)[-n:]
-            top_indices = np.unravel_index(top_indices, block.shape)
-            for i in range(n):
-                y, x = top_indices[0][i] + by * block_height, top_indices[1][i] + bx * block_width
-                ranked_corners[y, x] = 255
-
-# Draw blue dots on the original image where ranked corners are detected
-for y in range(height):
-    for x in range(width):
-        if ranked_corners[y, x] == 255:
-            cv2.circle(output_image, (x, y), 1, (255, 0, 0), -1)
-
-# Visualize the result
-cv2.imshow('Corners', output_image)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+# Call the main function if this file is executed as a script
+if __name__ == "__main__":
+    main()
