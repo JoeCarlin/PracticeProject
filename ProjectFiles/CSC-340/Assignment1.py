@@ -17,41 +17,72 @@ def get_rotation_matrix(angle):
 
 def rotate_image(image, angle_step):
     rows, cols = image.shape[:2]
-    center = (cols / 2, rows / 2)
-    
-    # Create an empty canvas with black border around the original image
+
+    # Add a black border to prevent clipping during rotation
     border = max(rows, cols)
     new_rows, new_cols = rows + 2 * border, cols + 2 * border
-    new_image = np.zeros((new_rows, new_cols, 3), dtype=np.uint8)
-    new_image[border:border+rows, border:border+cols] = image
-    
-    rotated_image = new_image.copy()
-    for angle in range(0, 360, angle_step):
-        rotation_matrix = get_rotation_matrix(angle)
-        temp_image = np.zeros_like(new_image)
-        
-        for x in range(new_cols):
-            for y in range(new_rows):
-                old_x = x - new_cols / 2
-                old_y = y - new_rows / 2
-                
-                new_coords = multiply_matrices(rotation_matrix, np.array([[old_x], [old_y]]))
-                new_x = int(new_coords[0, 0] + new_cols / 2)
-                new_y = int(new_coords[1, 0] + new_rows / 2)
-                
-                if 0 <= new_x < new_cols and 0 <= new_y < new_rows:
-                    temp_image[y, x] = new_image[new_y, new_x]
-        
-        rotated_image = temp_image.copy()
-        cv2.imshow(f'Rotated by {angle} degrees', rotated_image)
+    padded_image = np.zeros((new_rows, new_cols, 3), dtype=np.uint8)
+    for y in range(rows):
+        for x in range(cols):
+            padded_image[y + border][x + border] = image[y][x]
+
+    rotated_image = padded_image.copy()
+    center_x = new_cols / 2
+    center_y = new_rows / 2
+
+    num_rotations = 360 // angle_step
+
+    for step in range(num_rotations):
+        rotation_matrix = get_rotation_matrix(angle_step)
+        temp_image = np.zeros_like(rotated_image)
+
+        for y in range(new_rows):
+            for x in range(new_cols):
+                # Shift origin to center
+                dx = x - center_x
+                dy = y - center_y
+
+                # Rotate point using custom matrix multiplication
+                new_x = rotation_matrix[0][0] * dx + rotation_matrix[0][1] * dy
+                new_y = rotation_matrix[1][0] * dx + rotation_matrix[1][1] * dy
+
+                # Shift back
+                final_x = int(round(new_x + center_x))
+                final_y = int(round(new_y + center_y))
+
+                # Copy pixel if within bounds
+                if 0 <= final_x < new_cols and 0 <= final_y < new_rows:
+                    temp_image[final_y][final_x] = rotated_image[y][x]
+
+        rotated_image = temp_image
+
+        cv2.imshow(f'After {angle_step * (step + 1)}° rotation', rotated_image)
         cv2.waitKey(0)
-    
+
     cv2.destroyAllWindows()
     return rotated_image
 
 def calculate_absolute_error(original, rotated, border):
-    cropped_rotated = rotated[border:border+original.shape[0], border:border+original.shape[1]]
-    return np.sum(np.abs(original.astype(int) - cropped_rotated.astype(int))) / (original.shape[0] * original.shape[1] * original.shape[2])
+    height = original.shape[0]
+    width = original.shape[1]
+
+    # Crop rotated image to original size (remove border)
+    cropped_rotated = rotated[border:border+height, border:border+width]
+
+    total_error = 0
+    for y in range(height):
+        for x in range(width):
+            orig_pixel = original[y][x]
+            rot_pixel = cropped_rotated[y][x]
+
+            # Manually compute absolute color error for R, G, B
+            for c in range(3):  # RGB channels
+                diff = int(orig_pixel[c]) - int(rot_pixel[c])
+                total_error += abs(diff)
+
+    total_pixels = height * width
+    avg_error = total_error / total_pixels  # NOT dividing by 3
+    return avg_error
 
 def calculate_rounding_error(original, rotated, angle_step, num_pixels):
     error = 0
@@ -71,12 +102,15 @@ def calculate_rounding_error(original, rotated, angle_step, num_pixels):
                 # Translate back to original space
                 rotated_coords[0] += center_x
                 rotated_coords[1] += center_y
-                rounded_coords = np.round(rotated_coords).astype(int)
+                rounded_coords_x = round(rotated_coords[0, 0])
+                rounded_coords_y = round(rotated_coords[1, 0])
                 
                 # Calculate rounding error for valid pixel coordinates
-                if 0 <= rounded_coords[0, 0] < original.shape[1] and \
-                   0 <= rounded_coords[1, 0] < original.shape[0]:
-                    error += np.linalg.norm(rotated_coords - rounded_coords)
+                if 0 <= rounded_coords_x < original.shape[1] and \
+                   0 <= rounded_coords_y < original.shape[0]:
+                    dx = rotated_coords[0, 0] - rounded_coords_x
+                    dy = rotated_coords[1, 0] - rounded_coords_y
+                    error += math.sqrt(dx * dx + dy * dy)
 
     return error / num_pixels
 
