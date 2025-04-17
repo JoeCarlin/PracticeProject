@@ -204,7 +204,7 @@ def visualize_cornerness_grayscale_manual(cornerness, output_path="ProjectFiles/
 
 # Main function to run full pipeline
 def main():
-    img_path = 'ProjectFiles/CSC-340/Media/checkerboard.png'
+    img_path = 'ProjectFiles/CSC-340/Media/cones1.png'
 
     cornerness, img = harris_corner_detection(img_path)
     save_corners_overlay(img_path, cornerness)
