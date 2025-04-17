@@ -103,7 +103,7 @@ def main():
     print(f"Pixel Rounding Error: {rounding_error:.3f}")
     print(f"(# Rotations) * (Pixel Displacement): {(360 // angle_step) * rounding_error:.3f}")
     
-    cv2.imwrite('ProjectFiles/CSC-340/Media/rotated_image.png', rotated_image)
+    cv2.imwrite('ProjectFiles/CSC-340/Media/cones_rotate.png', rotated_image)
 
 if __name__ == "__main__":
     main()
