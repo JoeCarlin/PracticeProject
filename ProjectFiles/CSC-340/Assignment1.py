@@ -33,7 +33,7 @@ def rotate_image(image, angle_step):
     num_rotations = 360 // angle_step
 
     for step in range(num_rotations):
-        rotation_matrix = get_rotation_matrix(angle_step)
+        inv_rotation_matrix = get_rotation_matrix(-angle_step)
         temp_image = np.zeros_like(rotated_image)
 
         for y in range(new_rows):
@@ -42,25 +42,28 @@ def rotate_image(image, angle_step):
                 dx = x - center_x
                 dy = y - center_y
 
-                # Rotate point using custom matrix multiplication
-                new_x = rotation_matrix[0][0] * dx + rotation_matrix[0][1] * dy
-                new_y = rotation_matrix[1][0] * dx + rotation_matrix[1][1] * dy
+                # Inverse rotation to find original coordinates
+                src_x = inv_rotation_matrix[0][0] * dx + inv_rotation_matrix[0][1] * dy
+                src_y = inv_rotation_matrix[1][0] * dx + inv_rotation_matrix[1][1] * dy
 
-                # Shift back
-                final_x = int(round(new_x + center_x))
-                final_y = int(round(new_y + center_y))
+                # Shift back to original space
+                orig_x = int(round(src_x + center_x))
+                orig_y = int(round(src_y + center_y))
 
                 # Copy pixel if within bounds
-                if 0 <= final_x < new_cols and 0 <= final_y < new_rows:
-                    temp_image[final_y][final_x] = rotated_image[y][x]
+                if 0 <= orig_x < new_cols and 0 <= orig_y < new_rows:
+                    temp_image[y, x] = rotated_image[orig_y, orig_x]
 
         rotated_image = temp_image
 
+        # Optional: comment out these lines for batch processing or grading
         cv2.imshow(f'After {angle_step * (step + 1)}° rotation', rotated_image)
         cv2.waitKey(0)
 
     cv2.destroyAllWindows()
     return rotated_image
+
+
 
 def calculate_absolute_error(original, rotated, border):
     height = original.shape[0]
@@ -81,7 +84,7 @@ def calculate_absolute_error(original, rotated, border):
                 total_error += abs(diff)
 
     total_pixels = height * width
-    avg_error = total_error / total_pixels  # NOT dividing by 3
+    avg_error = total_error / total_pixels
     return avg_error
 
 def calculate_rounding_error(original, rotated, angle_step, num_pixels):
@@ -122,7 +125,7 @@ def main():
         return
 
     # Rotate the image
-    angle_step = 45
+    angle_step = 60
     rotated_image = rotate_image(image, angle_step)
     
     # Calculate the errors
