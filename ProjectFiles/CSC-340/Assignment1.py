@@ -56,7 +56,6 @@ def rotate_image(image, angle_step):
 
         rotated_image = temp_image
 
-        # Optional: comment out these lines for batch processing or grading
         cv2.imshow(f'After {angle_step * (step + 1)}° rotation', rotated_image)
         cv2.waitKey(0)
 
@@ -69,7 +68,7 @@ def calculate_absolute_error(original, rotated, border):
     height = original.shape[0]
     width = original.shape[1]
 
-    # Crop rotated image to original size (remove border)
+    # Crop rotated image to original size 
     cropped_rotated = rotated[border:border+height, border:border+width]
 
     total_error = 0
@@ -78,7 +77,7 @@ def calculate_absolute_error(original, rotated, border):
             orig_pixel = original[y][x]
             rot_pixel = cropped_rotated[y][x]
 
-            # Manually compute absolute color error for R, G, B
+            # compute absolute color error for R, G, B
             for c in range(3):  # RGB channels
                 diff = int(orig_pixel[c]) - int(rot_pixel[c])
                 total_error += abs(diff)
@@ -125,7 +124,7 @@ def main():
         return
 
     # Rotate the image
-    angle_step = 60
+    angle_step = 360  # Change this value to test different angle steps
     rotated_image = rotate_image(image, angle_step)
     
     # Calculate the errors
