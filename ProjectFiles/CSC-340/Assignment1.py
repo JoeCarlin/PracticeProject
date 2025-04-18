@@ -124,7 +124,7 @@ def main():
         return
 
     # Rotate the image
-    angle_step = 360  # Change this value to test different angle steps
+    angle_step = 30  # Change this value to test different angle steps
     rotated_image = rotate_image(image, angle_step)
     
     # Calculate the errors
