@@ -1,71 +1,102 @@
 import numpy as np
 import cv2
-import random
+from matplotlib import pyplot as plt
 
-def compute_homography(pts1, pts2):
-    A = []
-    for i in range(pts1.shape[0]):
-        x, y = pts1[i][0], pts1[i][1]
-        x_p, y_p = pts2[i][0], pts2[i][1]
-        A.append([-x, -y, -1, 0, 0, 0, x * x_p, y * x_p, x_p])
-        A.append([0, 0, 0, -x, -y, -1, x * y_p, y * y_p, y_p])
-    A = np.array(A)
-    _, _, V = np.linalg.svd(A)
-    H = V[-1].reshape((3, 3))
-    return H / H[2, 2]
+# Load images
+img1 = cv2.imread('ProjectFiles/CSC-340/Media/waterfall1.jpg', 0)  # queryImage
+img2 = cv2.imread('ProjectFiles/CSC-340/Media/waterfall2.jpg', 0)  # trainImage
 
-def ransac_homography(pts1, pts2, iterations=50000, threshold=5.0):
-    max_inliers = 0
+# Initiate SIFT detector
+sift = cv2.SIFT_create()
+
+# Find the keypoints and descriptors with SIFT
+kp1, des1 = sift.detectAndCompute(img1, None)
+kp2, des2 = sift.detectAndCompute(img2, None)
+
+# BFMatcher with default params
+bf = cv2.BFMatcher()
+matches = bf.knnMatch(des1, des2, k=2)
+
+# Apply ratio test
+good = []
+for m, n in matches:
+    if m.distance < 0.7 * n.distance:
+        good.append([m])
+
+# Draw matches
+img3 = cv2.drawMatchesKnn(img1, kp1, img2, kp2, good, None, flags=2)
+plt.imshow(img3)
+plt.show()
+
+# Store points for homography calculation
+pts1 = np.zeros((len(good), 2), np.float32)
+pts2 = np.zeros((len(good), 2), np.float32)
+for m in range(len(good)):
+    pts1[m] = kp1[good[m][0].queryIdx].pt
+    pts2[m] = kp2[good[m][0].trainIdx].pt
+
+# Implementing RANSAC
+def ransac(pts1, pts2, iterations=20000, threshold=5.0):
+    best_inliers_count = 0
     best_H = None
+    num_points = len(pts1)
 
     for _ in range(iterations):
-        idx = random.sample(range(len(pts1)), 4)
-        sample_pts1 = pts1[idx]
-        sample_pts2 = pts2[idx]
+        # Randomly select 4 points
+        indices = np.random.choice(num_points, 4, replace=False)
+        pts1_sample = pts1[indices]
+        pts2_sample = pts2[indices]
 
-        try:
-            H = compute_homography(sample_pts1, sample_pts2)
-        except np.linalg.LinAlgError:
-            continue
+        # Compute homography using the selected points
+        H = compute_homography(pts1_sample, pts2_sample)
 
+        # Reproject all points and calculate inliers
         inliers = 0
-        for i in range(len(pts1)):
-            pt1 = np.append(pts1[i], 1)
-            projected = H @ pt1
-            projected /= projected[2]
-            dist = np.linalg.norm(pts2[i] - projected[:2])
-            if dist < threshold:
+        for i in range(num_points):
+            pt1 = np.array([pts1[i][0], pts1[i][1], 1])
+            pt2 = np.array([pts2[i][0], pts2[i][1], 1])
+            pt1_transformed = np.dot(H, pt1)
+            pt1_transformed /= pt1_transformed[2]  # Homogeneous coordinates normalization
+
+            # Compute distance between the transformed point and the original point
+            distance = np.linalg.norm(pt2[:2] - pt1_transformed[:2])
+
+            if distance < threshold:
                 inliers += 1
 
-        if inliers > max_inliers:
-            max_inliers = inliers
+        # If the number of inliers is higher than the previous best, update the best homography
+        if inliers > best_inliers_count:
+            best_inliers_count = inliers
             best_H = H
 
     return best_H
 
-# Load grayscale images
-img1 = cv2.imread('ProjectFiles/CSC-340/Media/waterfall1.jpg', 0)
-img2 = cv2.imread('ProjectFiles/CSC-340/Media/waterfall2.jpg', 0)
+# Function to compute homography from 4 point pairs
+def compute_homography(pts1, pts2):
+    A = []
+    for i in range(4):
+        x1, y1 = pts1[i]
+        x2, y2 = pts2[i]
+        A.append([x1, y1, 1, 0, 0, 0, -x2 * x1, -x2 * y1, -x2])
+        A.append([0, 0, 0, x1, y1, 1, -y2 * x1, -y2 * y1, -y2])
 
-# SIFT feature detection
-sift = cv2.SIFT_create()
-kp1, des1 = sift.detectAndCompute(img1, None)
-kp2, des2 = sift.detectAndCompute(img2, None)
+    A = np.array(A)
+    _, _, V = np.linalg.svd(A)
+    H = V[-1].reshape(3, 3)
 
-# Feature matching
-bf = cv2.BFMatcher()
-matches = bf.knnMatch(des1, des2, k=2)
-good = [m[0] for m in matches if len(m) == 2 and m[0].distance < 0.7 * m[1].distance]
+    return H
 
-# Extract matched point coordinates
-pts1 = np.float32([kp1[m.queryIdx].pt for m in good])
-pts2 = np.float32([kp2[m.trainIdx].pt for m in good])
+# Run RANSAC
+H_ransac = ransac(pts1, pts2)
 
-# Custom RANSAC Homography
-H_custom = ransac_homography(pts1, pts2, iterations=50000, threshold=5.0)
+# Ensure the bottom right element is 1 (homogeneous coordinates)
+H_ransac[2, 2] = 1
 
-# OpenCV Homography for comparison
-H_opencv, _ = cv2.findHomography(pts1, pts2, cv2.RANSAC, 5.0)
+# Print the custom H matrix computed by RANSAC
+print("Custom H matrix (with H[2,2] = 1):")
+print(H_ransac)
 
-print("Custom H matrix (with H[2,2] = 1):\n", H_custom)
-print("\nOpenCV H matrix:\n", H_opencv)
+# Now, use OpenCV to calculate the homography for comparison
+opencv_H, mask = cv2.findHomography(pts1, pts2, cv2.RANSAC, 5.0)
+print("OpenCV H matrix:")
+print(opencv_H)
