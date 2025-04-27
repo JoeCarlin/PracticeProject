@@ -2,106 +2,102 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 
-img1 = cv2.imread('ProjectFiles/CSC-340/Media/waterfall1.jpg', 0)  # queryImage
-img2 = cv2.imread('ProjectFiles/CSC-340/Media/waterfall2.jpg', 0)  # trainImage
+# Load images
+img1 = cv2.imread('ProjectFiles/CSC-340/Media/waterfall1.jpg', 0)
+img2 = cv2.imread('ProjectFiles/CSC-340/Media/waterfall2.jpg', 0)
 
-# Check if the images are loaded correctly
-if img1 is None or img2 is None:
-    print("Error: One or both images could not be loaded.")
-    exit(1)
-
-# Step 1: Detect keypoints and descriptors using SIFT
+# Initiate SIFT detector
 sift = cv2.SIFT_create()
+
+# Find the keypoints and descriptors with SIFT
 kp1, des1 = sift.detectAndCompute(img1, None)
 kp2, des2 = sift.detectAndCompute(img2, None)
 
-# BFMatcher with default parameters
+# BFMatcher with default params
 bf = cv2.BFMatcher()
 matches = bf.knnMatch(des1, des2, k=2)
 
-# Apply ratio test (Lowe's ratio test)
+# Apply ratio test
 good = []
+pts1 = []
+pts2 = []
 for m, n in matches:
     if m.distance < 0.7 * n.distance:
-        good.append([m])
+        good.append(m)
+        pts1.append(kp1[m.queryIdx].pt)
+        pts2.append(kp2[m.trainIdx].pt)
 
-# Draw matches
-img3 = cv2.drawMatchesKnn(img1, kp1, img2, kp2, good, None, flags=2)
-plt.imshow(img3), plt.show()
+pts1 = np.array(pts1)
+pts2 = np.array(pts2)
 
-# Extract points from the good matches
-pts1 = np.zeros((len(good), 2), np.float32)
-pts2 = np.zeros((len(good), 2), np.float32)
+# Draw matches for visualization
+img3 = cv2.drawMatchesKnn(img1, kp1, img2, kp2, [[g] for g in good], None, flags=2)
+plt.imshow(img3)
+plt.title('Good Matches')
+plt.show()
 
-for i in range(len(good)):
-    pts1[i] = kp1[good[i][0].queryIdx].pt
-    pts2[i] = kp2[good[i][0].trainIdx].pt
-
-# Variables for tracking best homography
-bestH = None
-best_error = float('inf')
-
-# RANSAC iterations
-iterations = 1000
-for i in range(iterations):
-    # Step 2a: Pick 4 random matches
-    indices = np.random.choice(len(good), 4, replace=False)
-    pts1_sample = pts1[indices]
-    pts2_sample = pts2[indices]
-
-    # Step 2b: Construct the 8x9 matrix A
+# Function to compute homography from 4 point pairs
+def compute_homography(pts1, pts2):
     A = []
-    for j in range(4):
-        x1, y1 = pts1_sample[j]
-        x2, y2 = pts2_sample[j]
-        A.append([x1, y1, 1, 0, 0, 0, -x2 * x1, -x2 * y1, -x2])
-        A.append([0, 0, 0, x1, y1, 1, -y2 * x1, -y2 * y1, -y2])
+    for i in range(4):
+        x1, y1 = pts1[i]
+        x2, y2 = pts2[i]
+        A.append([x1, y1, 1, 0, 0, 0, -x2*x1, -x2*y1, -x2])
+        A.append([0, 0, 0, x1, y1, 1, -y2*x1, -y2*y1, -y2])
 
     A = np.array(A)
+    _, _, Vt = np.linalg.svd(A)
+    H = Vt[-1].reshape(3, 3)
+    return H
 
-    # Step 2c: Perform SVD on A
-    U, S, Vt = np.linalg.svd(A)
-    h = Vt[-1]  # Last row of Vt is the solution for h
+# RANSAC implementation
+def ransac(pts1, pts2, iterations=3000):
+    best_total_distance = float('inf')
+    best_H = None
+    num_points = len(pts1)
 
-    # Step 2d: Reformat into a 3x3 homography matrix
-    H = h.reshape(3, 3)
+    for _ in range(iterations):
+        # Randomly pick 4 matches
+        indices = np.random.choice(num_points, 4, replace=False)
+        pts1_sample = pts1[indices]
+        pts2_sample = pts2[indices]
 
-    # Step 2e: Evaluate quality of H
-    total_error = 0
-    for j in range(len(good)):
-        pt1_homogeneous = np.array([pts1[j][0], pts1[j][1], 1])
-        pt2_estimated_homogeneous = np.dot(H, pt1_homogeneous)
-        pt2_estimated = pt2_estimated_homogeneous[:2] / pt2_estimated_homogeneous[2]
+        # Compute candidate homography
+        H_candidate = compute_homography(pts1_sample, pts2_sample)
 
-        # Compute Euclidean distance between pt2_estimated and actual pt2
-        pt2_actual = pts2[j]
-        distance = np.linalg.norm(pt2_estimated - pt2_actual)
-        total_error += distance
+        # Calculate sum of distances for all points
+        total_distance = 0
+        for i in range(num_points):
+            x1, y1 = pts1[i]
+            x2, y2 = pts2[i]
 
-    # Step 2f: Check if current homography is the best
-    if total_error < best_error:
-        best_error = total_error
-        bestH = H
+            pt1_homog = np.array([x1, y1, 1.0])
+            projected = H_candidate @ pt1_homog
+            projected /= projected[2]  # Normalize homogeneous coordinate
 
-    # Optional: print progress every 100 iterations
-    if (i + 1) % 100 == 0:
-        print(f"Iteration {i + 1}/{iterations}, Error: {total_error}")
+            u, v = projected[0], projected[1]
+            distance = np.sqrt((u - x2)**2 + (v - y2)**2)
 
-# Once RANSAC is complete, we use the best homography to align the images
-if bestH is not None:
-    print("Best Homography Matrix (RANSAC):\n", bestH)
+            total_distance += distance
 
-    # Step 3: Warp the images using the best homography
-    img1_aligned = cv2.warpPerspective(img1, bestH, (img2.shape[1], img2.shape[0]))
+        # Keep the H with the lowest error
+        if total_distance < best_total_distance:
+            best_total_distance = total_distance
+            best_H = H_candidate
 
-    # Display the aligned images
-    plt.subplot(121), plt.imshow(img1, cmap='gray'), plt.title('Original Image')
-    plt.subplot(122), plt.imshow(img1_aligned, cmap='gray'), plt.title('Aligned Image')
-    plt.show()
+    return best_H
 
-    # Now use OpenCV's findHomography function to get a homography matrix
-    opencvH, mask = cv2.findHomography(pts1, pts2, cv2.RANSAC, 5.0)
-    print("\nHomography Matrix (OpenCV):\n", opencvH)
+# Run RANSAC to find best homography
+H_ransac = ransac(pts1, pts2)
 
-else:
-    print("Homography calculation failed.")
+# Normalize H so H[2,2] = 1
+H_ransac /= H_ransac[2,2]
+
+print("Custom RANSAC Homography matrix:")
+print(H_ransac)
+
+# Now compare with OpenCV's built-in RANSAC
+opencv_H, mask = cv2.findHomography(pts1, pts2, cv2.RANSAC, 5.0)
+
+print("\nOpenCV findHomography matrix:")
+print(opencv_H)
