@@ -3,8 +3,8 @@ import cv2
 from matplotlib import pyplot as plt
 
 # Load images
-img1 = cv2.imread('ProjectFiles/CSC-340/Media/mountainLeft.jpg', 0)
-img2 = cv2.imread('ProjectFiles/CSC-340/Media/mountainRight.jpg', 0)
+img1 = cv2.imread('ProjectFiles/CSC-340/Media/waterfall1.jpg', 0)
+img2 = cv2.imread('ProjectFiles/CSC-340/Media/waterfall2.jpg', 0)
 
 # Initiate SIFT detector
 sift = cv2.SIFT_create()
