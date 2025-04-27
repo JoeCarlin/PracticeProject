@@ -89,7 +89,7 @@ for i in range(iterations):
 
 # Once RANSAC is complete, we use the best homography to align the images
 if bestH is not None:
-    print("Best Homography Matrix:\n", bestH)
+    print("Best Homography Matrix (RANSAC):\n", bestH)
 
     # Step 3: Warp the images using the best homography
     img1_aligned = cv2.warpPerspective(img1, bestH, (img2.shape[1], img2.shape[0]))
@@ -98,5 +98,10 @@ if bestH is not None:
     plt.subplot(121), plt.imshow(img1, cmap='gray'), plt.title('Original Image')
     plt.subplot(122), plt.imshow(img1_aligned, cmap='gray'), plt.title('Aligned Image')
     plt.show()
+
+    # Now use OpenCV's findHomography function to get a homography matrix
+    opencvH, mask = cv2.findHomography(pts1, pts2, cv2.RANSAC, 5.0)
+    print("\nHomography Matrix (OpenCV):\n", opencvH)
+
 else:
     print("Homography calculation failed.")
