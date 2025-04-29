@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-from matplotlib import pyplot as plt
 
 # Load images
 img1 = cv2.imread('ProjectFiles/CSC-340/Media/queenstownLeft.JPG', 0)
@@ -29,12 +28,6 @@ for m, n in matches:
 
 pts1 = np.array(pts1)
 pts2 = np.array(pts2)
-
-# Draw matches for visualization
-img3 = cv2.drawMatchesKnn(img1, kp1, img2, kp2, [[g] for g in good], None, flags=2)
-plt.imshow(img3)
-plt.title('Good Matches')
-plt.show()
 
 # Function to compute homography from 4 point pairs
 def compute_homography(pts1, pts2):
@@ -164,10 +157,8 @@ def stitch_images(image1, image2, bestH):
     
     return panorama
 
-# Stitch the images and show the result
+# Stitch the images
 result = stitch_images(img1, img2, H_ransac)
 
-# Show the resulting panorama
-plt.imshow(result, cmap='gray')
-plt.title('Stitched Panorama')
-plt.show()
+# Save the resulting panorama to a file
+cv2.imwrite('ProjectFiles/CSC-340/Media/stitched_panorama.jpg', result)
