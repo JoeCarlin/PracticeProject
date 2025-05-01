@@ -2,8 +2,8 @@ import numpy as np
 import cv2
 
 # Load images in color
-img1 = cv2.imread('ProjectFiles/CSC-340/Media/queenstownLeft.JPG')
-img2 = cv2.imread('ProjectFiles/CSC-340/Media/queenstownRight.JPG')
+img1 = cv2.imread('ProjectFiles/CSC-340/Media/mountainLeft.jpg')
+img2 = cv2.imread('ProjectFiles/CSC-340/Media/mountainRight.jpg')
 
 # Initiate SIFT detector
 sift = cv2.SIFT_create()
